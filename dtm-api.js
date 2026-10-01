@@ -1,24 +1,55 @@
-const EXEC_URL = "https://script.google.com/macros/s/AKfycbz1LFh2kk-aVFL8Nkz_tHXui4V20z-NgBUNb-DXMKz1WJ4WZgM98hL_WWW9Mlj24SGb/exec";
+// DTM API - connecté à ton Google Sheet
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbzbOaB4Jb-3Dg-3D/exec"; // <-- REMPLACE par ton URL
 
-async function reserverCommande() {
-  const id = "DTM-" + Math.random().toString(36).substr(2,8).toUpperCase();
-  
-  const data = {
-    id: id,
-    event: "Feti na Mabré — Concert de Makarabianko",
-    billets: document.querySelector('[name=billets]').value,
-    total: document.querySelector('[name=total]').value,
-    nom: document.querySelector('[name=nom]').value,
-    phone: document.querySelector('[name=phone]').value,
-    email: document.querySelector('[name=email]').value,
-    adresse: document.querySelector('[name=adresse]').value,
-    promo: document.querySelector('[name=promo]').value,
-    paiement: "Orange Money +243852862455",
-    statut: "EN_ATTENTE"
-  };
+async function reserverCommande(){
+  const btn = document.querySelector('button[onclick="reserverCommande()"]');
+  if(btn){ btn.textContent="Enregistrement..."; btn.disabled=true; }
 
-  await fetch(EXEC_URL, {method: "POST", mode: "no-cors", body: JSON.stringify(data)});
-  
-  // Redirige vers la page mémoire
-  window.location.href = "ticket.html?id=" + id;
+  try{
+    const nom = document.getElementById('nm')?.value.trim();
+    const tel = document.getElementById('ph')?.value.trim();
+    const email = document.getElementById('em')?.value.trim();
+    const adresse = document.getElementById('ad')?.value.trim();
+    const codepromo = document.getElementById('cd')?.value.trim();
+    const paiement = document.querySelector('input[name="pm"]:checked')?.value || "Espèces";
+
+    if(!nom ||!tel){ alert("Nom et téléphone obligatoires"); if(btn){btn.textContent="Réserver mes billets"; btn.disabled=false;} return; }
+
+    // Billets
+    const billets = (typeof sel!== 'undefined' && typeof cur!== 'undefined')?
+      cur.t.map((x,i)=> sel[i]? `${x.k} x${sel[i]}` : null).filter(Boolean).join(', ')
+      : "1 billet";
+
+    const montant = (typeof tot === 'function')? tot() : 0;
+    const evenement = (typeof cur!== 'undefined')? cur.n : "Événement DTM";
+
+    // Génère ID ticket
+    const ticketId = "DTM-" + Math.random().toString(36).substring(2,8).toUpperCase();
+
+    // Envoie vers Google Sheet
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify({
+        id: ticketId,
+        nom: nom,
+        telephone: tel,
+        email: email,
+        adresse: adresse,
+        codepromo: codepromo,
+        paiement: paiement,
+        evenement: evenement,
+        billets: billets,
+        montant: montant,
+        date: new Date().toISOString()
+      })
+    });
+
+    // Redirige vers ticket
+    window.location.href = "ticket.html?id=" + ticketId + "&nom=" + encodeURIComponent(nom);
+
+  }catch(e){
+    alert("Erreur: " + e.message);
+    if(btn){btn.textContent="Réserver mes billets"; btn.disabled=false;}
+  }
 }
