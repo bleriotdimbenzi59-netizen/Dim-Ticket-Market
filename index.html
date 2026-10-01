@@ -202,7 +202,7 @@ function checkout(){nav(`<button class="lnk" data-a="back">Retour</button><h1>Vo
 <h3>Mode de paiement souhaité</h3><p class="m">Le paiement s’effectue après votre demande. Choisissez votre mode pour faciliter le suivi de votre réservation.</p><div class="pm">${['Airtel Money','M-Pesa','Orange Money','Espèces'].map((m,i)=>`<label><input type="radio" name="pm" value="${m}"${i?'':' checked'}><span>${m}</span></label>`).join('')}</div>
 <label class="ck"><input id="c1" type="checkbox">J’accepte de recevoir sur WhatsApp les informations relatives à ma réservation.</label>
 <label class="ck"><input id="c2" type="checkbox">J’accepte de recevoir les informations concernant les prochains événements de Dim Ticket Market (facultatif).</label>
-<p id="err" class="bad" role="alert"></p><button class="btn full" data-a="confirm">Réserver mes billets</button>`)}
+<p id="err" class="bad" role="alert"></p><button class="btn full" type="button" onclick="reserverCommande()">Réserver mes billets</button>`)}
 
 // Numéro WhatsApp Business, indicatif inclus, chiffres seulement (ex. '243970000000')
 const WA_NUMBER='243894101598';const WA_DISPLAY='+243 894 101 598';
