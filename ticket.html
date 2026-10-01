@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon Billet - Dim Ticket Market</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+body{font-family:system-ui;background:#0f0f0f;color:#fff;display:flex;justify-content:center;padding:20px;margin:0}
+.card{background:#1e1e1e;padding:25px;border-radius:16px;max-width:420px;width:100%;text-align:center;border:1px solid #333;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.wait{color:#ffcc00} .paid{color:#00ff88} .error{color:#ff4444}
+#qrcode{display:flex;justify-content:center;margin:20px 0;background:#fff;padding:15px;border-radius:12px;min-height:50px}
+.btn{background:#ff6600;color:#fff;padding:14px 20px;border:none;border-radius:10px;width:100%;font-weight:bold;cursor:pointer;margin-top:10px;font-size:16px}
+.payBox{background:#222;padding:15px;border-radius:10px;margin:15px 0;text-align:left;border:1px dashed #ff6600;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="card" id="ticketCard">
+  <h2 id="title">Vérification...</h2>
+  <p id="details" style="opacity:.9"></p>
+  <div id="qrcode"></div>
+  <div id="payInfo" class="payBox" style="display:none">
+    <b>🎫 Pour débloquer ton billet :</b><br><br>
+    1. Va sur <b>Orange Money</b><br>
+    2. Envoie le total à : <b style="color:#ff6600;font-size:18px">+243852862455</b><br>
+    3. Mets comme motif / référence : <b id="refCode" style="background:#fff;color:#000;padding:2px 6px;border-radius:4px"></b><br>
+    4. Envoie la capture sur WhatsApp Dim Ticket<br><br>
+    <small>Ton billet s'activera automatiquement après vérification.</small>
+  </div>
+  <button id="btnDL" class="btn" style="display:none">📥 Télécharger mon billet</button>
+  <p style="font-size:11px;opacity:.5;margin-top:20px">Dim Ticket Market • Garde ce lien précieusement. C'est ta mémoire d'accès.</p>
+</div>
+
+<script>
+const EXEC_URL = "https://script.google.com/macros/s/AKfycbz1LFh2kk-aVFL8Nkz_tHXui4V20z-NgBUNb-DXMKz1WJ4WZgM98hL_WWW9Mlj24SGb/exec";
+const params = new URLSearchParams(window.location.search);
+const id = params.get('id');
+
+if(!id){
+  document.getElementById('title').innerHTML='<span class="error">Lien invalide</span>';
+  document.getElementById('details').innerText="Pas de code DTM- trouvé dans le lien.";
+} else {
+  document.getElementById('refCode').innerText = id;
+  document.getElementById('details').innerText = "Chargement de " + id + "...";
+
+  fetch(EXEC_URL + "?id=" + id)
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){
+      document.getElementById('title').innerHTML='<span class="error">Billet introuvable</span>';
+      document.getElementById('details').innerText = "Code " + id + " non trouvé dans le Sheet.";
+      return;
+    }
+    if(d.statut=="EN_ATTENTE"){
+      document.getElementById('title').innerHTML='<span class="wait">⏳ En attente de paiement</span>';
+      document.getElementById('details').innerHTML=`Réservation <b>${d.id}</b><br>${d.event}<br>${d.billets} • ${d.total}`;
+      document.getElementById('payInfo').style.display="block";
+    } else if(d.statut=="PAYE"){
+      document.getElementById('title').innerHTML='<span class="paid">✅ Billet Confirmé</span>';
+      document.getElementById('details').innerHTML=`<b>${d.nom}</b><br>Réservation ${d.id}<br>${d.event}<br>${d.billets}`;
+      document.getElementById("qrcode").innerHTML="";
+      new QRCode(document.getElementById("qrcode"), {text:id,width:200,height:200});
+      document.getElementById('btnDL').style.display="block";
+    }
+  }).catch(e=>{
+    document.getElementById('title').innerText="Erreur de connexion";
+    document.getElementById('details').innerText=e;
+  });
+}
+
+document.getElementById('btnDL').onclick=()=>{
+  html2canvas(document.getElementById('ticketCard')).then(c=>{
+    var a=document.createElement('a'); a.download=id+'.png'; a.href=c.toDataURL(); a.click();
+  });
+}
+</script>
+</body>
+</html>
