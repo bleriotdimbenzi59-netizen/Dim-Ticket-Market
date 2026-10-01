@@ -32,5 +32,5 @@ async function reserverCommande(){
   }catch(e){}
 
   // On redirige direct, pas besoin d'attendre Google
-  window.location.href = "ticket.html?id=" + ticketId + "&nom=" + encodeURIComponent(nom);
+  window.location.href = "paiement.html?id=" + ticketId + "&nom=" + encodeURIComponent(nom) + "&montant=" + montant;
 }
