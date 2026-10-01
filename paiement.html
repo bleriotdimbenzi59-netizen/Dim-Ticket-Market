@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paiement</title>
+<style>body{font-family:sans-serif; background:#f5f5f5; display:flex; justify-content:center; padding:20px} .card{background:white; padding:25px; border-radius:16px; max-width:400px; width:100%}</style>
+</head>
+<body>
+<div class="card">
+<h2>Finalisez votre paiement</h2>
+<p id="info"></p>
+<div style="background:#fef2f2; padding:15px; border-radius:10px; margin:15px 0">
+<p><b>M-Pesa:</b> 0812345678</p>
+<p><b>Airtel Money:</b> 0971234567</p>
+<p><b>Montant:</b> <span id="mnt"></span> $</p>
+<p><b>Référence:</b> <span id="ref"></span></p>
+</div>
+<p style="font-size:13px; color:#666">Envoyez le montant avec la référence comme motif. Puis cliquez ci-dessous.</p>
+<button id="btn" style="width:100%; padding:14px; background:#e11d48; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px">J'ai payé, générer mon billet</button>
+</div>
+<script>
+const p = new URLSearchParams(location.search);
+const id = p.get('id'); const nom = p.get('nom'); const montant = p.get('montant') || '...';
+document.getElementById('ref').textContent = id;
+document.getElementById('mnt').textContent = montant;
+document.getElementById('info').textContent = `Merci ${nom}, votre commande ${id} est en attente.`;
+document.getElementById('btn').onclick = () => {
+  // On marque comme payé dans le Sheet
+  fetch("https://script.google.com/macros/s/AKfycbzfFRG--5H0jY_m_vDOFLeGr5F6BIOIMHfaueDazGbfhjHqPY5JIbgAPRal-riwudqw/exec", {
+    method: "POST", mode: "no-cors", body: JSON.stringify({id: id, action: "payer"})
+  });
+  window.location.href = `ticket.html?id=${id}&nom=${encodeURIComponent(nom)}&paid=1`;
+}
+</script>
+</body>
+</html>
