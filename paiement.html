@@ -25,7 +25,7 @@ document.getElementById('mnt').textContent = montant;
 document.getElementById('info').textContent = `Merci ${nom}, votre commande ${id} est en attente.`;
 document.getElementById('btn').onclick = () => {
   // On marque comme payé dans le Sheet
-  fetch("https://script.google.com/macros/s/AKfycbzfFRG--5H0jY_m_vDOFLeGr5F6BIOIMHfaueDazGbfhjHqPY5JIbgAPRal-riwudqw/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbwg_e-BcmGGAlTpBUpG_gkfp8lecKbgrRJRFi0sjcthkZeNJzjU8NlTi47cLsunscY5/exec", {
     method: "POST", mode: "no-cors", body: JSON.stringify({id: id, action: "payer"})
   });
   window.location.href = `ticket.html?id=${id}&nom=${encodeURIComponent(nom)}&paid=1`;
