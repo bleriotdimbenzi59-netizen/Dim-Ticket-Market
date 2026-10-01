@@ -43,8 +43,7 @@ if(!id){
 } else {
   document.getElementById('refCode').innerText = id;
   document.getElementById('details').innerText = "Chargement de " + id + "...";
-
-  fetch(EXEC_URL + "?id=" + id)
+fetch(EXEC_URL + "?id=" + id)
   .then(r=>r.json())
   .then(d=>{
     if(d.error){
@@ -52,6 +51,7 @@ if(!id){
       document.getElementById('details').innerText = "Code " + id + " non trouvé dans le Sheet.";
       return;
     }
+  
     if(d.statut=="EN_ATTENTE"){
       document.getElementById('title').innerHTML='<span class="wait">⏳ En attente de paiement</span>';
       document.getElementById('details').innerHTML=`Réservation <b>${d.id}</b><br>${d.event}<br>${d.billets} • ${d.total}`;
