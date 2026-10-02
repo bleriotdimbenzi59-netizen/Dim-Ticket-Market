@@ -1,43 +1,66 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Paiement DTM</title>
-<style>body{font-family:sans-serif; background:#f5f5f5; display:flex; justify-content:center; padding:20px}.card{background:white; padding:25px; border-radius:16px; max-width:420px; width:100%; box-shadow:0 4px 15px rgba(0,0,0,.1)}</style>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;margin:0;padding:20px}
+.card{max-width:420px;margin:20px auto;background:#fff;padding:24px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+h2{margin-top:0}
+.pay{background:#fff7ed;padding:15px;border:1px solid #fdba74;border-radius:12px;margin:16px 0}
+.num{font-size:22px;font-weight:bold}
+button{width:100%;padding:14px;background:#25d366;color:#fff;border:0;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer}
+#msg{display:none;background:#dcfce7;padding:14px;border-radius:12px;margin-top:14px}
+#etat{font-size:13px;color:#666;text-align:center;margin-top:14px}
+</style>
 </head>
 <body>
 <div class="card">
 <h2>Finalisez votre paiement</h2>
 <p id="info"></p>
-<div style="background:#fff7ed; padding:15px; border-radius:10px; border:1px solid #fdba74; margin:15px 0">
-<p><b style="color:#ea580c">Orange Money:</b> <br><span style="font-size:22px; font-weight:bold">+243852862455</span></p>
-<p><b>Montant:</b> <span id="mnt"></span> $</p>
-<p><b>Référence:</b> <b id="ref"></b></p>
+<div class="pay">
+<p><b style="color:#ea580c">Orange Money :</b><br><span class="num">+243852862455</span></p>
+<p><b>Montant :</b> <span id="mnt"></span> $</p>
+<p><b>Référence :</b> <b id="ref"></b></p>
 </div>
-<button id="btn" style="width:100%; padding:14px; background:#25D366; color:white; border:none; border-radius:10px; font-weight:bold">J'ai payé, envoyer la preuve sur WhatsApp</button>
-<div id="msg" style="display:none; background:#dcfce7; padding:15px; border-radius:10px; text-align:center; margin-top:15px">
-<b>Merci! Preuve envoyée.</b><br><br>Restez sur WhatsApp, on valide votre paiement dans 2-3 min et votre billet va se débloquer tout seul.
-</div>
-<p style="font-size:12px; color:#666; margin-top:15px; text-align:center">Page en attente de validation...</p>
+<button id="btn">J'ai payé, envoyer la preuve sur WhatsApp</button>
+<div id="msg"><b>Merci ! Preuve envoyée.</b><br><br>Restez sur WhatsApp : votre billet s'affichera ici dès que le paiement sera confirmé.</div>
+<p id="etat">Page en attente de validation…</p>
 </div>
 <script>
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwDtRo_nyLeuE9rSu3J2qfFGE-etCtvU8zb0t5X10EG3kx1_9ucdlfPMEkmErmoTHGt/exec";
-const p = new URLSearchParams(location.search);
-const id = p.get('id'); const nom = p.get('nom'); const montant = p.get('montant')||'';
-document.getElementById('ref').textContent = id;
-document.getElementById('mnt').textContent = montant;
-document.getElementById('info').textContent = `Commande ${id} pour ${nom}`;
-document.getElementById('btn').onclick = () => {
-  fetch(SHEET_URL, {method:"POST", mode:"no-cors", body:JSON.stringify({id:id, action:"preuve_envoyee"})});
-  const msg = `Bonjour DTM, j'ai payé.%0A%0AID: ${id}%0ANom: ${nom}%0AMontant: ${montant}$%0A%0AJe joins la capture Orange Money.`;
-  window.open(`https://wa.me/243894101598?text=${msg}`, "_blank");
-  document.getElementById('btn').style.display='none';
-  document.getElementById('msg').style.display='block';
-  setInterval(()=>{
-    fetch(`${SHEET_URL}?id=${id}`).then(r=>r.json()).then(d=>{
-      if(d.statut==='Payé'){ window.location.href = `ticket.html?id=${id}&nom=${encodeURIComponent(nom)}`; }
-    });
-  }, 5000);
+const API="https://script.google.com/macros/s/AKfycbxzN9gIXgPbjw_dTDecm6QUB_eqBLZHJDgHnCdqhZxO9voArV4s_RRZkiPWeUj00UUK/exec";
+const WA="243894101598";
+const p=new URLSearchParams(location.search);
+const id=(p.get('id')||'').trim(), nom=p.get('nom')||'', montant=p.get('montant')||'';
+const $=s=>document.getElementById(s);
+$('ref').textContent=id;
+$('mnt').textContent=montant;
+$('info').textContent='Commande '+id+(nom?' pour '+nom:'');
+
+$('btn').onclick=()=>{
+  const msg="Bonjour DTM, j'ai payé.\n\nID : "+id+"\nNom : "+nom+"\nMontant : "+$('mnt').textContent+" $";
+  window.open('https://wa.me/'+WA+'?text='+encodeURIComponent(msg),'_blank');
+  fetch(API,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'preuve_envoyee',id:id})}).catch(()=>{});
+  $('btn').style.display='none';
+  $('msg').style.display='block';
+};
+
+function verifier(){
+  fetch(API+'?id='+encodeURIComponent(id)).then(r=>r.json()).then(d=>{
+    if(d.total)$('mnt').textContent=d.total;
+    const s=String(d.statut||'').trim();
+    if(/^pay/i.test(s)){
+      location.href='ticket.html?id='+encodeURIComponent(id)+'&nom='+encodeURIComponent(nom);
+    }else if(s==='Non trouvé'){
+      $('etat').textContent='Commande introuvable. Vérifiez votre lien.';
+    }else{
+      $('etat').textContent='Statut : '+s+' — en attente de validation…';
+    }
+  }).catch(()=>{});
 }
+if(id){verifier();setInterval(verifier,5000);}
+else{$('etat').textContent='Lien invalide : aucune commande.';$('btn').style.display='none';}
 </script>
 </body>
 </html>
