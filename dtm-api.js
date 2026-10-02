@@ -1,4 +1,4 @@
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbxJnT1gK2X8N2FaTwWegzfkynLYG_hpxa6hXPNyS17TNMufrEpspNkXs-yPSEsiVLb6/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwDtRo_nyLeuE9rSu3J2qfFGE-etCtvU8zb0t5X10EG3kx1_9ucdlfPMEkmErmoTHGt/exec";
 
 async function reserverCommande(){
   const nom = document.getElementById('nm')?.value.trim();
