@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin DTM</title>
+<style>
+body{font-family:sans-serif; background:#111; color:white; padding:20px}
+.card{background:#1f1f1f; padding:15px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center}
+.badge{padding:4px 10px; border-radius:20px; font-size:12px}
+.en-attente{background:#854d0e} .preuve{background:#1e40af} .paye{background:#166534}
+button{padding:8px 14px; border:none; border-radius:8px; font-weight:bold; cursor:pointer}
+.btn-valider{background:#22c55e; color:black}
+input{padding:12px; width:100%; border-radius:10px; border:none; margin-bottom:15px; margin-top:10px}
+</style>
+</head>
+<body>
+<h2>🎛️ Admin DTM - Paiements</h2>
+<p style="color:#999">Connecté au Sheet: Bleriot</p>
+
+<input type="password" id="pass" placeholder="Mot de passe admin (dtm2026)">
+<div id="list">Chargement...</div>
+
+<script>
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxJnT1gK2X8N2FaTwWegzfkynLYG_hpxa6hXPNyS17TNMufrEpspNkXs-yPSEsiVLb6/exec";
+const ADMIN_PASS = "dtm2026";
+
+function load(){
+  if(document.getElementById('pass').value !== ADMIN_PASS && document.getElementById('pass').value !== ""){
+    alert("Mauvais mot de passe"); return;
+  }
+  fetch(`${SHEET_URL}?list=all`).then(r=>r.json()).then(data=>{
+    let html = "";
+    data.reverse().forEach(row=>{
+      const id=row[0], nom=row[1], tel=row[2], montant=row[3], statut=row[4], date=row[5];
+      if(!id) return;
+      let cls = statut.includes("Preuve") ? "preuve" : statut==="Payé" ? "paye" : "en-attente";
+      html += `<div class="card">
+        <div>
+          <b>${id}</b> - ${nom} (${tel})<br>
+          <small>${montant}$ - ${new Date(date).toLocaleString()} </small><br>
+          <span class="badge ${cls}">${statut}</span>
+        </div>
+        <div>
+          ${statut!=="Payé" ? `<button class="btn-valider" onclick="valider('${id}')">Valider Payé ✅</button>` : `✅ Validé`}
+        </div>
+      </div>`;
+    });
+    document.getElementById('list').innerHTML = html || "Aucune commande";
+  });
+}
+
+function valider(id){
+  if(!confirm("Valider paiement "+id+" ? Le billet va se débloquer pour le client.")) return;
+  fetch(SHEET_URL, {method:"POST", mode:"no-cors", body:JSON.stringify({id:id, action:"payer"})});
+  setTimeout(load, 1000);
+  alert("Validé! Le client "+id+" peut voir son billet maintenant.");
+}
+
+document.getElementById('pass').addEventListener('change', load);
+setInterval(()=>{ if(document.getElementById('pass').value===ADMIN_PASS) load(); }, 7000);
+
+// auto load si tu veux sans mdp pour test: load();
+</script>
+</body>
+</html>
