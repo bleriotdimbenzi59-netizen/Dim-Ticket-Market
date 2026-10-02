@@ -251,6 +251,41 @@ else if(a==='wabiz'){const isAndroid=/Android/i.test(navigator.userAgent),link=w
 document.addEventListener('input',e=>{if(e.target.id==='q'){q=e.target.value;list()}});
 const ac=$('#adcar');if(ac)ac.addEventListener('scroll',()=>{const n=Math.round(ac.scrollLeft/ac.clientWidth);document.querySelectorAll('#addots span').forEach((d,i)=>d.classList.toggle('on',i===n))});
 home();
+</<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDtRo_nyLeuE9rSu3J2qfFGE-etCtvU8zb0t5X10EG3kx1_9ucdlfPMEkmErmoTHGt/exec";
+
+document.getElementById('form-dtm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button');
+  btn.innerText = "Envoi en cours...";
+  btn.disabled = true;
+
+  const data = {
+    nom: document.getElementById('nom').value,
+    whatsapp: document.getElementById('whatsapp').value,
+    pays: document.getElementById('pays').value
+  };
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if(json.id){
+      // Redirige vers la page de paiement
+      window.location.href = "pay.html?id=" + json.id;
+    } else {
+      alert("Erreur: " + JSON.stringify(json));
+      btn.innerText = "S'inscrire";
+      btn.disabled = false;
+    }
+  } catch(err){
+    alert("Erreur réseau: " + err);
+    btn.innerText = "S'inscrire";
+    btn.disabled = false;
+  }
+});
 </script>
 <p style="text-align:center;color:var(--mut);font-size:10px;padding:6px 0 16px">Dim Ticket Market — version 1.1</p><script src="dtm-api.js"></script>
 <script src="dtm-api.js"></script>
