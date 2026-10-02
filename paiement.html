@@ -29,7 +29,7 @@ document.getElementById('info').textContent = `Commande ${id} pour ${nom}`;
 document.getElementById('btn').onclick = () => {
   fetch(SHEET_URL, {method:"POST", mode:"no-cors", body:JSON.stringify({id:id, action:"preuve_envoyee"})});
   const msg = `Bonjour DTM, j'ai payé.%0A%0AID: ${id}%0ANom: ${nom}%0AMontant: ${montant}$%0A%0AJe joins la capture Orange Money.`;
-  window.open(`https://wa.me/243852862455?text=${msg}`, "_blank");
+  window.open(`https://wa.me/243894101598?text=${msg}`, "_blank");
   document.getElementById('btn').style.display='none';
   document.getElementById('msg').style.display='block';
   setInterval(()=>{
