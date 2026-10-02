@@ -15,6 +15,13 @@
   <button onclick="window.print()" style="margin-top:20px; padding:12px 20px; background:black; color:white; border:none; border-radius:8px; width:100%">Imprimer / PDF</button>
   <a href="index.html" style="display:block; margin-top:15px; color:#666">Retour</a>
 </div>
+const urlParams = new URLSearchParams(location.search);
+fetch(`https://script.google.com/macros/s/AKfycbwg_e-BcmGGAlTpBUpG_gkfp8lecKbgrRJRFi0sjcthkZeNJzjU8NlTi47cLsunscY5/exec?id=${urlParams.get('id')}`)
+.then(r=>r.json()).then(d=>{
+  if(d.statut!=='Payé'){
+    document.body.innerHTML = `<div style='padding:50px; text-align:center; font-family:sans-serif'><h2>⏳ Paiement en vérification</h2><p>On vérifie votre paiement Orange Money.<br>Gardez WhatsApp ouvert, votre billet arrive.</p></div>`;
+  }
+});
 <script>
   const p = new URLSearchParams(location.search);
   document.getElementById('code').textContent = p.get('id') || 'DTM-XXXX';
