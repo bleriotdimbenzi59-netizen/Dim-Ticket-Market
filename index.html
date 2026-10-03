@@ -264,7 +264,13 @@ function reserverTicket(nom, whatsapp, pays){
   }catch(e){}
   window.location.href = "pay.html?id=" + id + "&nom=" + encodeURIComponent(nom);
 }
-
+<button onclick="reserverTicket(
+  document.getElementById('nom').value,
+  document.getElementById('whatsapp').value,
+  document.getElementById('pays').value
+)" style="width:100%;padding:15px;background:#ffcc00;font-weight:bold;border:none;border-radius:8px;cursor:pointer;">
+Réserver mes billets
+</button>
 document.addEventListener("DOMContentLoaded", function(){
   const form = document.querySelector("form");
   if(form){
