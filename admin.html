@@ -1,16 +1,12 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Admin DTM</title></head>
+<body>
+<h2>Admin - Dim Ticket Market</h2>
+<div id="list">Chargement...</div>
+<script>
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
-
-async function reserverTicket(nom, whatsapp, pays){
-  const id = "DTM-" + Date.now();
-  const urlPay = "pay.html?id=" + id + "&nom=" + encodeURIComponent(nom);
-  
-  // On envoie au Sheet sans attendre la réponse
-  fetch(SHEET_URL, {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify({nom: nom, whatsapp: whatsapp, pays: pays, id_forced: id})
-  });
-
-  // On part tout de suite sur pay.html
-  window.location.href = urlPay;
-}
+fetch(SHEET_URL).then(r=>r.json()).then(data=>{
+  document.getElementById('list').innerHTML = "<pre>"+JSON.stringify(data,null,2)+"</pre>";
+}).catch(e=>{document.getElementById('list').innerHTML = "Erreur: "+e});
+</script>
+</body></html>
