@@ -1,4 +1,4 @@
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwDtRo_nyLeuE9rSu3J2qfFGE-etCtvU8zb0t5X10EG3kx1_9ucdlfPMEkmErmoTHGt/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
 
 function reserverTicket(nom, whatsapp, pays){
   if(!nom || !whatsapp){ alert("Remplis nom et whatsapp"); return; }
