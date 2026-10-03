@@ -1,67 +1,16 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Admin DTM</title>
-<style>
-body{font-family:sans-serif;background:#111;color:#fff;margin:0;padding:16px}
-.card{background:#1f1f1f;padding:15px;border-radius:14px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.badge{padding:4px 10px;border-radius:20px;font-size:12px}
-.en-attente{background:#854d0e}.preuve{background:#1d4ed8}.paye{background:#166534}
-button{padding:10px 16px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
-.btn-valider{background:#22c55e;color:#000}
-input{padding:12px;width:100%;border-radius:10px;border:1px solid #333;background:#1f1f1f;color:#fff;box-sizing:border-box;margin-bottom:8px}
-small{color:#aaa}
-</style>
-</head>
-<body>
-<h2>🎛️ Admin DTM - Paiements</h2>
-<input type="password" id="pass" placeholder="Mot de passe admin" autocomplete="current-password">
-<button id="go" class="btn-valider" style="width:100%">Charger</button>
-<div id="list"></div>
-<script>
-const API="https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
-let cle="";
-const $=s=>document.getElementById(s);
-const echap=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const appel=corps=>fetch(API,{method:'POST',body:JSON.stringify(corps)}).then(r=>r.json());
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
 
-function charger(silencieux){
-  if(!silencieux){cle=$('pass').value;}
-  if(!cle){alert('Entrez le mot de passe');return;}
-  if(!silencieux)$('list').textContent='Chargement…';
-  appel({action:'liste',key:cle}).then(d=>{
-    if(!d.ok){cle="";$('list').textContent='';alert(d.error||'Erreur');return;}
-    afficher(d.commandes.slice().reverse());
-  }).catch(()=>{if(!silencieux)$('list').textContent='Impossible de charger.';});
+async function reserverTicket(nom, whatsapp, pays){
+  const id = "DTM-" + Date.now();
+  const urlPay = "pay.html?id=" + id + "&nom=" + encodeURIComponent(nom);
+  
+  // On envoie au Sheet sans attendre la réponse
+  fetch(SHEET_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify({nom: nom, whatsapp: whatsapp, pays: pays, id_forced: id})
+  });
+
+  // On part tout de suite sur pay.html
+  window.location.href = urlPay;
 }
-
-function afficher(liste){
-  if(!liste.length){$('list').textContent='Aucune commande.';return;}
-  $('list').innerHTML=liste.map(c=>{
-    const s=c.statut||'En attente';
-    const cls=/^pay/i.test(s)?'paye':(/preuve/i.test(s)?'preuve':'en-attente');
-    return '<div class="card"><div><b>'+echap(c.id)+'</b> - '+echap(c.nom)+' ('+echap(c.tel)+')<br>'
-      +'<small>'+(c.total?echap(c.total)+' $':'—')+' · '+echap(c.evenement)+' · '+echap(c.paiement)+' · '+echap(c.date)+'</small><br>'
-      +'<span class="badge '+cls+'">'+echap(s)+'</span></div>'
-      +'<div>'+(/^pay/i.test(s)?'':'<button class="btn-valider" data-id="'+echap(c.id)+'">Valider</button>')+'</div></div>';
-  }).join('');
-}
-
-function valider(id){
-  if(!confirm('Valider le paiement '+id+' ? Le billet sera disponible pour le client.'))return;
-  appel({action:'payer',id:id,key:cle}).then(d=>{
-    if(d.ok){charger(true);alert('Validé ! Le client '+id+' peut voir son billet.');}
-    else alert(d.error||'Erreur');
-  }).catch(()=>alert('Erreur réseau'));
-}
-
-$('go').onclick=()=>charger(false);
-$('pass').addEventListener('keydown',e=>{if(e.key==='Enter')charger(false)});
-$('list').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)valider(b.dataset.id)});
-setInterval(()=>{if(cle)charger(true)},20000);
-</script>
-</body>
-</html>
