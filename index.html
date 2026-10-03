@@ -252,36 +252,31 @@ document.addEventListener('input',e=>{if(e.target.id==='q'){q=e.target.value;lis
 const ac=$('#adcar');if(ac)ac.addEventListener('scroll',()=>{const n=Math.round(ac.scrollLeft/ac.clientWidth);document.querySelectorAll('#addots span').forEach((d,i)=>d.classList.toggle('on',i===n))});
 home();
 </script>
-<p style="text-align:center;color:var(--mut);font-size:10px;padding:6px 0 16px">Dim Ticket Market — version 1.1</p><script src="dtm-api.js"></script>
-<script src="dtm-api.js"></script>
+<p style="text-align:center;color:var(--mut);font-size:10px;padding:6px 0 16px">Dim Ticket Market — version 1.1</p>
 <script>
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwDtRo_nyLeuE9rSu3J2qfFGE-etCtvU8zb0t5X10EG3kx1_9ucdlfPMEkmErmoTHGt/exec";
 
 function reserverTicket(nom, whatsapp, pays){
   if(!nom || !whatsapp){ alert("Remplis nom et whatsapp"); return; }
   const id = "DTM-" + Date.now();
-  // Envoie sans bloquer
   try{
     fetch(SHEET_URL, {method:"POST", mode:"no-cors", body: JSON.stringify({nom, whatsapp, pays, id_forced:id})});
   }catch(e){}
-  // Part direct
   window.location.href = "pay.html?id=" + id + "&nom=" + encodeURIComponent(nom);
 }
 
-// Force le formulaire
 document.addEventListener("DOMContentLoaded", function(){
   const form = document.querySelector("form");
   if(form){
     form.onsubmit = function(e){
       e.preventDefault();
-      const nom = form.querySelector('[name="nom"]')?.value || form.querySelector('input[type="text"]')?.value || "Client";
-      const whatsapp = form.querySelector('[name="whatsapp"]')?.value || form.querySelector('input[type="tel"]')?.value || "";
+      const nom = form.querySelector('[name="nom"]')?.value || "Client";
+      const whatsapp = form.querySelector('[name="whatsapp"]')?.value || "";
       const pays = form.querySelector('[name="pays"]')?.value || "CD";
       reserverTicket(nom, whatsapp, pays);
     }
   }
 });
 </script>
-</body>
 </body>
 </html>
