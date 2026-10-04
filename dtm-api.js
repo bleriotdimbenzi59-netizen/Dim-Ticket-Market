@@ -1,7 +1,7 @@
 /* Dim Ticket Market : connexion du site au Google Sheets (via Apps Script)
    À charger APRÈS le script principal : <script src="dtm-api.js"></script> */
 (function(){
-const API='https://script.google.com/macros/s/AKfycbzZEQMBTyCml06ysxzQy2AM0fsyjBFEsrJRdR-TPMwqOuM5s7taEnK82acYwb-1K2E/exec';
+const API='https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec';
 const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const CLASSES=['p1','p2','p3','p4'];
 
