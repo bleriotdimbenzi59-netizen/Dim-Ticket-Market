@@ -12,6 +12,11 @@ h2{margin-top:0}
 .num{font-size:22px;font-weight:bold}
 button{width:100%;padding:14px;background:#25d366;color:#fff;border:0;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer}
 #msg{display:none;background:#dcfce7;padding:14px;border-radius:12px;margin-top:14px}
+.titre{font-weight:bold;margin:0 0 10px}
+.modes{margin:0 0 14px;padding-left:22px}
+.modes li{margin:0 0 12px}
+.modes .op{font-weight:bold}
+.copier{width:auto;margin-left:8px;padding:6px 10px;background:#fff;color:#444;border:1px solid #ccc;border-radius:8px;font-size:12px;vertical-align:middle}
 #etat{font-size:13px;color:#666;text-align:center;margin-top:14px}
 </style>
 </head>
@@ -20,7 +25,8 @@ button{width:100%;padding:14px;background:#25d366;color:#fff;border:0;border-rad
 <h2>Finalisez votre paiement</h2>
 <p id="info"></p>
 <div class="pay">
-<p><b style="color:#ea580c">Orange Money :</b><br><span class="num">+243852862455</span></p>
+<p class="titre">Faites un retrait au :</p>
+<ol class="modes" id="modes"></ol>
 <p><b>Montant :</b> <span id="mnt"></span> $</p>
 <p><b>Référence :</b> <b id="ref"></b></p>
 </div>
@@ -34,6 +40,19 @@ const WA="243894101598";
 const p=new URLSearchParams(location.search);
 const id=(p.get('id')||'').trim(), nom=p.get('nom')||'', montant=p.get('montant')||'';
 const $=s=>document.getElementById(s);
+
+// Numéros où le client fait le retrait. Pour ajouter M-Pesa ou Airtel Money,
+// enlevez les // devant la ligne et mettez le bon numéro.
+const MODES=[
+  {nom:'Orange Money',num:'+243852862455',couleur:'#ea580c'},
+  // {nom:'M-Pesa',num:'+243XXXXXXXXX',couleur:'#16a34a'},
+  // {nom:'Airtel Money',num:'+243XXXXXXXXX',couleur:'#dc2626'},
+];
+$('modes').innerHTML=MODES.map((m,i)=>'<li><span class="op" style="color:'+m.couleur+'">'+m.nom+' :</span><br><span class="num">'+m.num+'</span><button type="button" class="copier" data-i="'+i+'">Copier</button></li>').join('');
+$('modes').addEventListener('click',e=>{
+  const b=e.target.closest('.copier');if(!b||!navigator.clipboard)return;
+  navigator.clipboard.writeText(MODES[b.dataset.i].num).then(()=>{b.textContent='Copié';setTimeout(()=>{b.textContent='Copier'},1500)}).catch(()=>{});
+});
 $('ref').textContent=id;
 $('mnt').textContent=montant;
 $('info').textContent='Commande '+id+(nom?' pour '+nom:'');
