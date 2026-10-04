@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f0f10">
+<title>Contrôle DTM</title>
+<script src="jsQR.js"></script>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#0f0f10;color:#f5f2ea;margin:0;padding:16px;padding-bottom:40px}
+.wrap{max-width:480px;margin:0 auto}
+h1{font-size:20px;margin:4px 0 14px;color:#f5a800}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:14px;cursor:pointer}
+.main{width:100%;background:#f5a800;color:#1a1200;font-size:17px;min-height:52px}
+.sec{background:#242427;color:#f5f2ea}
+#cam{position:relative;margin-top:12px;border-radius:14px;overflow:hidden;background:#000;display:none}
+#cam video{width:100%;display:block}
+#cam .cadre{position:absolute;inset:18%;border:3px solid #f5a800;border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+#cam button{position:absolute;right:10px;top:10px;padding:8px 12px;font-size:14px}
+.man{display:flex;gap:8px;margin-top:12px}
+.man input{flex:1;min-width:0;padding:14px;border-radius:12px;border:1.5px solid #2e2e31;background:#1a1a1c;color:#fff;font-size:17px;text-transform:uppercase;letter-spacing:1px}
+#res{display:none;margin-top:14px;border-radius:16px;padding:20px;text-align:center}
+#res .gros{font-size:32px;font-weight:900;letter-spacing:.02em;margin:0 0 6px}
+#res .code{font-size:20px;font-weight:800;letter-spacing:2px;margin:6px 0}
+#res p{margin:6px 0;font-size:17px}
+#res .ev{font-weight:800}
+#res button{margin-top:14px;width:100%;background:rgba(0,0,0,.35);color:#fff}
+.vert{background:#15803d;color:#fff}
+.rouge{background:#b91c1c;color:#fff}
+.orange{background:#c2410c;color:#fff}
+.gris{background:#3f3f46;color:#fff}
+.m{color:#a8a29a;font-size:13px}
+.stats{display:flex;justify-content:space-between;align-items:center;margin-top:22px}
+.stats b{font-size:18px}
+ul{list-style:none;padding:0;margin:8px 0 0}
+li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #2e2e31;font-size:14px}
+li span:last-child{color:#a8a29a;white-space:nowrap}
+.lien{display:block;text-align:center;margin-top:20px;color:#a8a29a}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Contrôle des billets</h1>
+<button class="main" id="scan">📷 Scanner un billet</button>
+<div id="cam"><video id="vid" playsinline muted></video><div class="cadre"></div><button class="sec" id="stop">Fermer</button></div>
+<form class="man" id="form"><input id="code" placeholder="DTM-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Numéro du billet"><button class="sec" type="submit">Vérifier</button></form>
+<p class="m" id="info"></p>
+<div id="res" role="status" aria-live="assertive"></div>
+<div class="stats"><span>Entrées sur ce téléphone : <b id="nb">0</b></span><button class="sec" id="raz" style="padding:8px 12px;font-size:13px">Effacer</button></div>
+<ul id="hist"></ul>
+<p class="m">Chaque billet n’est accepté qu’une fois sur ce téléphone. Utilisez un seul téléphone par entrée.</p>
+<a class="lien" href="index.html">Retour au site</a>
+</div>
+<script>
+const API="https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
+const CLE='dtm_entrees';
+const $=s=>document.getElementById(s);
+const echap=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const heure=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+
+// Billets déjà entrés, gardés sur ce téléphone
+function lire(){try{return JSON.parse(localStorage.getItem(CLE)||'{}')}catch(e){return {}}}
+function ecrire(o){try{localStorage.setItem(CLE,JSON.stringify(o))}catch(e){}}
+let entrees=lire();
+function historique(){
+  const l=Object.entries(entrees).sort((a,b)=>b[1].t-a[1].t);
+  $('nb').textContent=l.length;
+  $('hist').innerHTML=l.slice(0,30).map(([c,x])=>'<li><span><b>'+echap(c)+'</b> · '+echap(x.nom)+'</span><span>'+heure(x.t)+'</span></li>').join('');
+}
+
+// Lit un numéro DTM-… dans le texte du QR code (ou un lien qui le contient)
+function extraire(txt){
+  const m=String(txt||'').toUpperCase().match(/DTM-[A-Z0-9]+(?:-[A-Z0-9]+)*/);
+  return m?m[0]:'';
+}
+
+let occupe=false;
+function afficher(cls,html){
+  const r=$('res');r.className=cls;r.innerHTML=html+'<button id="suivant">Billet suivant</button>';r.style.display='block';
+  $('suivant').onclick=suivant;
+  r.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function vibrer(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+
+async function verifier(code){
+  if(occupe)return;
+  code=extraire(code);
+  if(!code){afficher('rouge','<p class="gros">CODE INVALIDE</p><p>Ce QR code n’est pas un billet Dim Ticket Market.</p>');vibrer([200,100,200]);return}
+  occupe=true;arreter();
+  afficher('gris','<p class="gros">Vérification…</p><p class="code">'+echap(code)+'</p>');
+  let d;
+  try{
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),15000);
+    const r=await fetch(API+'?id='+encodeURIComponent(code),{signal:ctl.signal});
+    clearTimeout(to);d=await r.json();
+  }catch(e){
+    occupe=false;
+    afficher('gris','<p class="gros">PAS DE CONNEXION</p><p class="code">'+echap(code)+'</p><p>Impossible de vérifier. Réessayez.</p>');
+    return;
+  }
+  occupe=false;
+  const s=String(d&&d.statut||'').trim();
+  const details='<p class="code">'+echap(code)+'</p>'
+    +(d.evenement?'<p class="ev">'+echap(d.evenement)+'</p>':'')
+    +(d.nom?'<p>Au nom de '+echap(d.nom)+'</p>':'')
+    +(d.total!==undefined&&d.total!==''?'<p>Montant payé : '+echap(d.total)+' $</p>':'');
+  if(s==='Non trouvé'||!d.ok){
+    afficher('rouge','<p class="gros">✖ INTROUVABLE</p><p class="code">'+echap(code)+'</p><p>Ce billet n’existe pas. Refuser l’entrée.</p>');vibrer([200,100,200]);
+  }else if(!/^pay/i.test(s)){
+    afficher('rouge','<p class="gros">✖ NON PAYÉ</p>'+details+'<p>Statut : '+echap(s)+'</p>');vibrer([200,100,200]);
+  }else if(entrees[code]){
+    afficher('orange','<p class="gros">⚠ DÉJÀ ENTRÉ</p>'+details+'<p><b>Scanné à '+heure(entrees[code].t)+'</b></p>');vibrer([400,100,400]);
+  }else{
+    entrees[code]={t:Date.now(),nom:String(d.nom||'')};ecrire(entrees);historique();
+    afficher('vert','<p class="gros">✔ VALIDE</p>'+details);vibrer(150);
+  }
+}
+
+// Caméra + lecture du QR code
+let flux=null,boucle=0;
+const vid=$('vid'),toile=document.createElement('canvas'),ctx=toile.getContext('2d',{willReadFrequently:true});
+async function demarrer(){
+  $('res').style.display='none';$('info').textContent='';
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('info').textContent='Caméra indisponible sur ce navigateur : tapez le numéro du billet.';return}
+  try{
+    flux=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+  }catch(e){$('info').textContent='Accès à la caméra refusé. Autorisez-la dans les réglages du navigateur, ou tapez le numéro du billet.';return}
+  vid.srcObject=flux;await vid.play().catch(()=>{});
+  $('cam').style.display='block';$('scan').style.display='none';
+  lire1();
+}
+function lire1(){
+  if(!flux)return;
+  if(vid.readyState>=2&&vid.videoWidth){
+    const w=Math.min(vid.videoWidth,640),h=Math.round(vid.videoHeight*w/vid.videoWidth);
+    toile.width=w;toile.height=h;ctx.drawImage(vid,0,0,w,h);
+    const q=jsQR(ctx.getImageData(0,0,w,h).data,w,h,{inversionAttempts:'dontInvert'});
+    if(q&&q.data){verifier(q.data);return}
+  }
+  boucle=requestAnimationFrame(lire1);
+}
+function arreter(){
+  cancelAnimationFrame(boucle);
+  if(flux){flux.getTracks().forEach(t=>t.stop());flux=null}
+  vid.srcObject=null;$('cam').style.display='none';$('scan').style.display='block';
+}
+function suivant(){$('res').style.display='none';$('code').value='';demarrer()}
+
+$('scan').onclick=demarrer;
+$('stop').onclick=arreter;
+$('form').onsubmit=e=>{e.preventDefault();const v=$('code').value.trim();if(v)verifier(v.toUpperCase().startsWith('DTM-')?v:'DTM-'+v)};
+$('raz').onclick=()=>{if(confirm('Effacer toutes les entrées enregistrées sur ce téléphone ? À faire seulement avant un nouvel événement.')){entrees={};ecrire(entrees);historique()}};
+historique();
+</script>
+</body>
+</html>
