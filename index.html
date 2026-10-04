@@ -201,7 +201,7 @@ function checkout(){nav(`<button class="lnk" data-a="back">Retour</button><h1>Vo
 <h3>Mode de paiement souhaité</h3><p class="m">Le paiement s’effectue après votre demande. Choisissez votre mode pour faciliter le suivi de votre réservation.</p><div class="pm">${['Airtel Money','M-Pesa','Orange Money','Espèces'].map((m,i)=>`<label><input type="radio" name="pm" value="${m}"${i?'':' checked'}><span>${m}</span></label>`).join('')}</div>
 <label class="ck"><input id="c1" type="checkbox">J’accepte de recevoir sur WhatsApp les informations relatives à ma réservation.</label>
 <label class="ck"><input id="c2" type="checkbox">J’accepte de recevoir les informations concernant les prochains événements de Dim Ticket Market (facultatif).</label>
-<p id="err" class="bad" role="alert"></p><button class="btn full" type="button" onclick="reserverCommande()">Réserver mes billets</button>`)}
+<p id="err" class="bad" role="alert"></p><button class="btn full" type="button" data-a="confirm">Réserver mes billets</button>`)}
 
 // Numéro WhatsApp Business, indicatif inclus, chiffres seulement (ex. '243970000000')
 const WA_NUMBER='243894101598';const WA_DISPLAY='+243 894 101 598';
@@ -252,38 +252,6 @@ const ac=$('#adcar');if(ac)ac.addEventListener('scroll',()=>{const n=Math.round(
 home();
 </script>
 <p style="text-align:center;color:var(--mut);font-size:10px;padding:6px 0 16px">Dim Ticket Market — version 1.1</p>
-<script>
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
-
-function reserverTicket(nom, whatsapp, pays){
-  if(!nom || !whatsapp){ alert("Remplis nom et whatsapp"); return; }
-  const id = "DTM-" + Date.now();
-  try{
-    fetch(SHEET_URL, {method:"POST", mode:"no-cors", body: JSON.stringify({nom, whatsapp, pays, id_forced:id})});
-  }catch(e){}
-  window.location.href = "pay.html?id=" + id + "&nom=" + encodeURIComponent(nom);
-}
-<button onclick="reserverTicket(
-  document.getElementById('nom').value,
-  document.getElementById('whatsapp').value,
-  document.getElementById('pays').value
-)" style="width:100%;padding:15px;background:#ffcc00;font-weight:bold;border:none;border-radius:8px;cursor:pointer;">
-Réserver mes billets
-</button>
-document.addEventListener("DOMContentLoaded", function(){
-  const form = document.querySelector("form");
-  if(form){
-    form.onsubmit = function(e){
-      e.preventDefault();
-      const nom = form.querySelector('[name="nom"]')?.value || "Client";
-      const whatsapp = form.querySelector('[name="whatsapp"]')?.value || "";
-      const pays = form.querySelector('[name="pays"]')?.value || "CD";
-      reserverTicket(nom, whatsapp, pays);
-    }
-  }
-});
-</script>
-</script>
 <script src="dtm-api.js?v=4"></script>
 </body>
 </html>
