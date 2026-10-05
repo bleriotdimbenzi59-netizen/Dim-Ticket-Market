@@ -63,11 +63,17 @@ const heure=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-
 // Billets déjà entrés, gardés sur ce téléphone
 function lire(){try{return JSON.parse(localStorage.getItem(CLE)||'{}')}catch(e){return {}}}
 function ecrire(o){try{localStorage.setItem(CLE,JSON.stringify(o))}catch(e){}}
-let entrees=lire();
+// Format : { 'DTM-XXXXXX': { nom, n: billets dans la réservation, t: [heures d'entrée], s: { '2': heure } } }
+function migrer(o){
+  Object.keys(o).forEach(c=>{const x=o[c];if(typeof x.t==='number')o[c]={nom:x.nom||'',n:1,t:[x.t],s:{}}});
+  return o;
+}
+let entrees=migrer(lire());
+const dernier=x=>Math.max(...x.t);
 function historique(){
-  const l=Object.entries(entrees).sort((a,b)=>b[1].t-a[1].t);
-  $('nb').textContent=l.length;
-  $('hist').innerHTML=l.slice(0,30).map(([c,x])=>'<li><span><b>'+echap(c)+'</b> · '+echap(x.nom)+'</span><span>'+heure(x.t)+'</span></li>').join('');
+  const l=Object.entries(entrees).sort((a,b)=>dernier(b[1])-dernier(a[1]));
+  $('nb').textContent=l.reduce((a,[,x])=>a+x.t.length,0);
+  $('hist').innerHTML=l.slice(0,30).map(([c,x])=>'<li><span><b>'+echap(c)+'</b> · '+echap(x.nom)+(x.n>1?' · '+x.t.length+'/'+x.n:'')+'</span><span>'+heure(dernier(x))+'</span></li>').join('');
 }
 
 // Lit un numéro DTM-… dans le texte du QR code (ou un lien qui le contient)
@@ -86,7 +92,10 @@ function vibrer(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
 
 async function verifier(code){
   if(occupe)return;
-  code=extraire(code);
+  const complet=extraire(code);
+  const m=complet.match(/^(DTM-[A-Z0-9]+)-(\d{1,2})$/);
+  code=m?m[1]:complet;
+  const num=m?String(+m[2]):'';
   if(!code){afficher('rouge','<p class="gros">CODE INVALIDE</p><p>Ce QR code n’est pas un billet Dim Ticket Market.</p>');vibrer([200,100,200]);return}
   occupe=true;arreter();
   afficher('gris','<p class="gros">Vérification…</p><p class="code">'+echap(code)+'</p>');
@@ -102,7 +111,11 @@ async function verifier(code){
   }
   occupe=false;
   const s=String(d&&d.statut||'').trim();
-  const details='<p class="code">'+echap(code)+'</p>'
+  const liste=Array.isArray(d&&d.billets)&&d.billets.length?d.billets:null;
+  const n=liste?liste.length:1;
+  const type=liste?(num?liste[+num-1]:(n===1?liste[0]:'')):'';
+  const details='<p class="code">'+echap(num?code+'-'+num:code)+'</p>'
+    +(num&&n>1?'<p><b>Billet '+num+'/'+n+(type?' · '+echap(type):'')+'</b></p>':(type?'<p><b>'+echap(type)+'</b></p>':''))
     +(d.evenement?'<p class="ev">'+echap(d.evenement)+'</p>':'')
     +(d.nom?'<p>Au nom de '+echap(d.nom)+'</p>':'')
     +(d.total!==undefined&&d.total!==''?'<p>Montant payé : '+echap(d.total)+' $</p>':'');
@@ -110,11 +123,20 @@ async function verifier(code){
     afficher('rouge','<p class="gros">✖ INTROUVABLE</p><p class="code">'+echap(code)+'</p><p>Ce billet n’existe pas. Refuser l’entrée.</p>');vibrer([200,100,200]);
   }else if(!/^pay/i.test(s)){
     afficher('rouge','<p class="gros">✖ NON PAYÉ</p>'+details+'<p>Statut : '+echap(s)+'</p>');vibrer([200,100,200]);
-  }else if(entrees[code]){
-    afficher('orange','<p class="gros">⚠ DÉJÀ ENTRÉ</p>'+details+'<p><b>Scanné à '+heure(entrees[code].t)+'</b></p>');vibrer([400,100,400]);
+  }else if(num&&(+num<1||+num>n)){
+    afficher('rouge','<p class="gros">✖ BILLET INVALIDE</p>'+details+'<p>Cette réservation ne contient que '+n+' billet'+(n>1?'s':'')+'.</p>');vibrer([200,100,200]);
   }else{
-    entrees[code]={t:Date.now(),nom:String(d.nom||'')};ecrire(entrees);historique();
-    afficher('vert','<p class="gros">✔ VALIDE</p>'+details);vibrer(150);
+    const e=entrees[code]||{nom:String(d.nom||''),n:n,t:[],s:{}};
+    e.n=n;
+    if(num&&e.s[num]){
+      afficher('orange','<p class="gros">⚠ DÉJÀ ENTRÉ</p>'+details+'<p><b>Scanné à '+heure(e.s[num])+'</b></p>');vibrer([400,100,400]);
+    }else if(e.t.length>=n){
+      afficher('orange','<p class="gros">⚠ DÉJÀ ENTRÉ</p>'+details+'<p><b>'+(n>1?'Les '+n+' billets de cette réservation sont déjà entrés.':'Scanné à '+heure(dernier(e)))+'</b></p>');vibrer([400,100,400]);
+    }else{
+      const t=Date.now();e.t.push(t);if(num)e.s[num]=t;
+      entrees[code]=e;ecrire(entrees);historique();
+      afficher('vert','<p class="gros">✔ VALIDE</p>'+details+(n>1&&!num?'<p><b>Entrée '+e.t.length+' sur '+n+' (QR groupé)</b></p>':''));vibrer(150);
+    }
   }
 }
 
@@ -150,7 +172,7 @@ function suivant(){$('res').style.display='none';$('code').value='';demarrer()}
 
 $('scan').onclick=demarrer;
 $('stop').onclick=arreter;
-$('form').onsubmit=e=>{e.preventDefault();const v=$('code').value.trim();if(v)verifier(v.toUpperCase().startsWith('DTM-')?v:'DTM-'+v)};
+$('form').onsubmit=e=>{e.preventDefault();const v=$('code').value.trim();if(v)verifier(v.toUpperCase().replace(/\s+/g,'').startsWith('DTM-')?v:'DTM-'+v)};
 $('raz').onclick=()=>{if(confirm('Effacer toutes les entrées enregistrées sur ce téléphone ? À faire seulement avant un nouvel événement.')){entrees={};ecrire(entrees);historique()}};
 historique();
 </script>

@@ -13,6 +13,9 @@ body{font-family:sans-serif;background:#f5f5f5;margin:0;padding:20px;display:fle
 .ko{color:#e11d48}
 a.lien{display:block;margin-top:16px;color:#444}
 button{margin-top:14px;padding:10px 18px;border:0;border-radius:10px;background:#111;color:#fff;cursor:pointer}
+.un{border-top:2px dashed #e5e5e5;margin-top:16px;padding-top:14px;break-inside:avoid}
+.un .type{font-weight:800;margin:0 0 6px}
+.un .sous{font-size:13px;letter-spacing:1px;color:#666;margin:6px 0 0}
 @media print{button,a.lien{display:none}}
 </style>
 </head>
@@ -25,19 +28,38 @@ const id=(p.get('id')||'').trim(), nom=p.get('nom')||'';
 const card=document.getElementById('card');
 const echap=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+// Garde la réservation dans « Mes billets » sur cet appareil
+function memoriser(d){
+  try{
+    const l=JSON.parse(localStorage.getItem('dtm_mes_billets')||'[]').filter(x=>x.code!==id);
+    l.unshift({code:id,nom:d.nom||nom,evenement:d.evenement||'',total:d.total||'',ajoute:Date.now()});
+    localStorage.setItem('dtm_mes_billets',JSON.stringify(l.slice(0,50)));
+  }catch(e){}
+}
+
 if(!id){
   card.innerHTML='<h2 class="ko">Billet introuvable</h2><a class="lien" href="index.html">Retour à l’accueil</a>';
 }else{
   fetch(API+'?id='+encodeURIComponent(id)).then(r=>r.json()).then(d=>{
     const s=String(d.statut||'').trim();
     if(/^pay/i.test(s)){
-      let qr='';
-      try{const q=qrcode(0,'M');q.addData(id);q.make();qr=q.createImgTag(5,8)}catch(e){}
-      card.innerHTML='<h1 class="ok">✅ Billet confirmé</h1><div class="code">'+echap(id)+'</div>'
+      const qr=t=>{try{const q=qrcode(0,'M');q.addData(t);q.make();return q.createImgTag(5,8)}catch(e){return ''}};
+      // Un QR code par billet (si le script renvoie la liste des billets)
+      const liste=Array.isArray(d.billets)?d.billets:[];
+      let billets;
+      if(liste.length>1){
+        billets=liste.map((type,i)=>{const c=id+'-'+(i+1);
+          return '<div class="un"><p class="type">Billet '+(i+1)+'/'+liste.length+' · '+echap(type)+'</p>'+qr(c)+'<p class="sous">'+echap(c)+'</p></div>'}).join('');
+      }else{
+        billets='<div>'+(liste.length?'<p class="type" style="font-weight:800">'+echap(liste[0])+'</p>':'')+qr(id)+'</div>';
+      }
+      memoriser(d);
+      card.innerHTML='<h1 class="ok">✅ '+(liste.length>1?liste.length+' billets confirmés':'Billet confirmé')+'</h1><div class="code">'+echap(id)+'</div>'
         +(d.evenement?'<p><b>'+echap(d.evenement)+'</b></p>':'')
-        +'<p>Au nom de '+echap(d.nom||nom)+'</p><div>'+qr+'</div>'
-        +'<p class="ok">Valide à l’entrée. Présentez ce billet à l’accueil.</p>'
+        +'<p>Au nom de '+echap(d.nom||nom)+'</p>'+billets
+        +'<p class="ok">'+(liste.length>1?'Chaque QR code est valable pour une seule entrée.':'Valide à l’entrée. Présentez ce billet à l’accueil.')+'</p>'
         +'<button onclick="window.print()">Imprimer / enregistrer</button>'
+        +'<a class="lien" href="mes-billets.html">Mes billets</a>'
         +'<a class="lien" href="index.html">Retour à l’accueil</a>';
     }else if(s==='Non trouvé'){
       card.innerHTML='<h2 class="ko">Commande introuvable</h2><a class="lien" href="index.html">Retour à l’accueil</a>';

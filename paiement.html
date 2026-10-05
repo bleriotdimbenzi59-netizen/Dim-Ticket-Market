@@ -33,6 +33,7 @@ button{width:100%;padding:14px;background:#25d366;color:#fff;border:0;border-rad
 <button id="btn">J'ai payé, envoyer la preuve sur WhatsApp</button>
 <div id="msg"><b>Merci ! Preuve envoyée.</b><br><br>Restez sur WhatsApp : votre billet s'affichera ici dès que le paiement sera confirmé.</div>
 <p id="etat">Page en attente de validation…</p>
+<p style="text-align:center;font-size:13px;color:#666;margin-top:10px">Vous pouvez fermer cette page : votre billet restera disponible dans <a href="mes-billets.html" style="color:#8a5200">Mes billets</a>.</p>
 </div>
 <script>
 const API="https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
@@ -54,6 +55,11 @@ $('modes').addEventListener('click',e=>{
   navigator.clipboard.writeText(MODES[b.dataset.i].num).then(()=>{b.textContent='Copié';setTimeout(()=>{b.textContent='Copier'},1500)}).catch(()=>{});
 });
 $('ref').textContent=id;
+// Garde la réservation dans « Mes billets » sur cet appareil
+try{
+  if(id){const l=JSON.parse(localStorage.getItem('dtm_mes_billets')||'[]');
+    if(!l.some(x=>x.code===id)){l.unshift({code:id,nom:nom,evenement:'',total:montant,ajoute:Date.now()});localStorage.setItem('dtm_mes_billets',JSON.stringify(l.slice(0,50)))}}
+}catch(e){}
 $('mnt').textContent=montant;
 $('info').textContent='Commande '+id+(nom?' pour '+nom:'');
 
