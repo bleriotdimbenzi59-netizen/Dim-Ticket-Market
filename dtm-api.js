@@ -10,6 +10,15 @@ const CLASSES=['p1','p2','p3','p4'];
 const g=id=>document.getElementById(id);
 const existe=n=>{try{return typeof eval(n)!=='undefined'}catch(e){return false}};
 
+/* ---------- « Mes billets » : commandes gardées sur cet appareil ---------- */
+function memoriser(c){
+  try{
+    const l=JSON.parse(localStorage.getItem('dtm_mes_billets')||'[]').filter(x=>x.code!==c.code);
+    c.ajoute=Date.now();l.unshift(c);
+    localStorage.setItem('dtm_mes_billets',JSON.stringify(l.slice(0,50)));
+  }catch(e){}
+}
+
 /* ---------- Visites (lancé en premier, jamais bloquant) ---------- */
 const vues={};
 function visite(page,evenement){
@@ -50,8 +59,7 @@ async function commander(btn){
     const nm=val('nm'),ph=val('ph'),ad=val('ad'),cd=val('cd').toUpperCase(),em=val('em');
     if(!nm||!ph)return err('Renseignez votre nom et votre téléphone.');
     if(!/^\+?[\d\s]{8,16}$/.test(ph))return err('Le numéro de téléphone n’est pas valide. Exemple : +243 970 000 000.');
-    if(!ad)return err('Indiquez votre adresse ou quartier pour déterminer le point de retrait.');
-    if(cd&&!/^[A-Z0-9]{2,4}-?[A-Z0-9]{2,4}$/.test(cd))return err('Le code promo ressemble à DTM-XXX, ou laissez-le vide.');
+    if(cd&&!/^[A-Z0-9]{2,4}-?[A-Z0-9]{2,4}$/.test(cd))return err('Le code jeu-concours ressemble à DTM-XXX, ou laissez-le vide.');
     if(!g('c1')||!g('c1').checked)return err('Cochez la réception des informations de réservation sur WhatsApp pour continuer.');
     const pmEl=document.querySelector('input[name=pm]:checked');
     const pm=pmEl?pmEl.value:'';
@@ -65,13 +73,14 @@ async function commander(btn){
     let srv=null,panne=false;
     try{
       const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),15000);
-      const r=await fetch(API,{method:'POST',signal:ctl.signal,body:JSON.stringify({action:'commande',eventId:cur.id,nom:nm,telephone:ph,adresse:ad,email:em,paiement:pm,promo:cd,billets:billets})});
+      const r=await fetch(API,{method:'POST',signal:ctl.signal,body:JSON.stringify({action:'commande',eventId:cur.id,nom:nm,telephone:ph,adresse:ad||'Non renseignée',email:em,paiement:pm,promo:cd,billets:billets})});
       clearTimeout(to);
       srv=await r.json();
     }catch(x){panne=true}
     btn.disabled=false;btn.textContent=texte;
 
     if(srv&&srv.ok){
+      memoriser({code:srv.code,nom:nm,evenement:cur.n,date:cur.d,total:srv.total});
       location.href='paiement.html?id='+encodeURIComponent(srv.code)+'&nom='+encodeURIComponent(nm)+'&montant='+encodeURIComponent(srv.total);
       return;
     }
@@ -138,18 +147,32 @@ function renderAds(pubs){
   if(dots)dots.innerHTML=Array.from(box.children).map((_,i)=>'<span'+(i?'':' class="on"')+'></span>').join('');
 }
 
+function appliquerStock(stock){
+  if(!stock||!existe('EV'))return;
+  EV.forEach(e=>{
+    const r=stock[e.id];if(!r)return;
+    e.t.forEach(x=>{
+      const k=/vvip/i.test(x.k)?'vvip':(/vip/i.test(x.k)?'vip':'standard');
+      if(k in r)x.s=(r[k]===null?Infinity:Math.max(0,Number(r[k])||0));
+    });
+  });
+}
+
 async function charger(){
   try{
     const r=await fetch(API);const d=await r.json();
     if(!d||!d.ok)return;
     if(d.publicites&&d.publicites.length)renderAds(d.publicites);
+    let change=false;
     if(d.evenements&&d.evenements.length&&existe('EV')&&existe('K')&&existe('ic')){
       EV.splice(0,EV.length,...d.evenements.map(mapEvent));
       EV.forEach(e=>{K[e.id]='Concert'});
       installerAffichage();
-      if(!cur){
-        if(document.activeElement&&document.activeElement.id==='q')window.list();else window.home();
-      }
+      change=true;
+    }
+    if(d.stock){appliquerStock(d.stock);change=true}
+    if(change&&!cur){
+      if(document.activeElement&&document.activeElement.id==='q')window.list();else window.home();
     }
   }catch(err){}
 }

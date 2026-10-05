@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mes billets — Dim Ticket Market</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#141414;margin:0;padding:20px}
+.wrap{max-width:440px;margin:0 auto}
+h1{font-size:24px;margin:4px 0 6px}
+.m{color:#666;font-size:14px;margin:4px 0 14px}
+.billet{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.haut{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ev{font-weight:800;font-size:16px;margin:0}
+.code{font-weight:800;letter-spacing:1px;margin:4px 0}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;background:#fef3c7;color:#92400e;white-space:nowrap}
+.badge.paye{background:#dcfce7;color:#166534}
+.badge.ko{background:#fee2e2;color:#991b1b}
+.btn{display:block;text-align:center;margin-top:12px;padding:13px;border-radius:12px;background:#f5a800;color:#1a1200;font-weight:800;text-decoration:none}
+.btn.vert{background:#16a34a;color:#fff}
+.suppr{background:none;border:0;color:#999;font-size:20px;line-height:1;cursor:pointer;padding:0 0 0 6px}
+form{display:flex;gap:8px;margin-top:8px}
+input{flex:1;min-width:0;padding:13px;border:1.5px solid #ddd;border-radius:12px;font-size:16px;text-transform:uppercase}
+button.ok{padding:13px 16px;border:0;border-radius:12px;background:#141414;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+#err{color:#b91c1c;font-size:14px;min-height:1em}
+.vide{text-align:center;color:#666;padding:24px 8px}
+.lien{display:block;text-align:center;margin-top:20px;color:#444}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🎟️ Mes billets</h1>
+<p class="m">Vos réservations faites sur ce téléphone. Revenez ici à tout moment pour retrouver vos billets.</p>
+<div id="liste"></div>
+<h2 style="font-size:17px;margin:26px 0 0">Retrouver un billet</h2>
+<p class="m" style="margin-bottom:0">Nouveau téléphone ? Tapez le code de votre réservation (il commence par DTM-).</p>
+<form id="form"><input id="code" placeholder="DTM-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de réservation"><button class="ok" type="submit">Ajouter</button></form>
+<p id="err" role="alert"></p>
+<a class="lien" href="index.html">Retour aux événements</a>
+<a class="lien" href="conditions.html" style="margin-top:8px;font-size:13px">Conditions de vente</a>
+</div>
+<script>
+const API="https://script.google.com/macros/s/AKfycbw2eHLMpO6617-jwHj5xaSDzGSTFpEvYMTeNNwd6bDo8jHR6Z8y-_6FY_WRQUW_PYbp/exec";
+const CLE='dtm_mes_billets';
+const $=s=>document.getElementById(s);
+const echap=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function lire(){try{return JSON.parse(localStorage.getItem(CLE)||'[]')}catch(e){return []}}
+function ecrire(l){try{localStorage.setItem(CLE,JSON.stringify(l.slice(0,50)))}catch(e){}}
+const etat={};
+
+function statut(code){
+  return fetch(API+'?id='+encodeURIComponent(code)).then(r=>r.json());
+}
+
+function afficher(){
+  const l=lire();
+  if(!l.length){$('liste').innerHTML='<div class="vide">Aucun billet pour le moment.<br><a class="btn" href="index.html" style="display:inline-block;padding:12px 18px">Voir les événements</a></div>';return}
+  $('liste').innerHTML=l.map(b=>{
+    const d=etat[b.code];
+    const s=d?String(d.statut||'').trim():'';
+    let badge='<span class="badge">Vérification…</span>',action='';
+    const q='id='+encodeURIComponent(b.code)+'&nom='+encodeURIComponent(b.nom||'');
+    if(d&&d.erreur){badge='<span class="badge ko">Hors connexion</span>'}
+    else if(d&&s==='Non trouvé'){badge='<span class="badge ko">Introuvable</span>'}
+    else if(d&&/^pay/i.test(s)){badge='<span class="badge paye">Payé ✔</span>';action='<a class="btn vert" href="ticket.html?'+q+'">Voir mon billet</a>'}
+    else if(d&&/annul/i.test(s)){badge='<span class="badge ko">'+echap(s)+'</span>'}
+    else if(d){badge='<span class="badge">'+echap(s||'En attente')+'</span>';action='<a class="btn" href="paiement.html?'+q+'&montant='+encodeURIComponent(d.total||b.total||'')+'">Finaliser le paiement</a>'}
+    const ev=(d&&d.evenement)||b.evenement||'Réservation';
+    return '<div class="billet"><div class="haut"><div><p class="ev">'+echap(ev)+'</p><p class="code">'+echap(b.code)+'</p>'
+      +((d&&d.detail)?'<div class="m" style="margin:0">'+echap(d.detail)+'</div>':'')
+      +'</div><div>'+badge+'<button class="suppr" data-code="'+echap(b.code)+'" aria-label="Retirer '+echap(b.code)+'">×</button></div></div>'+action+'</div>';
+  }).join('');
+}
+
+function verifierTout(){
+  lire().forEach(b=>{
+    statut(b.code).then(d=>{etat[b.code]=d;afficher()}).catch(()=>{etat[b.code]={erreur:1};afficher()});
+  });
+}
+
+$('liste').addEventListener('click',e=>{
+  const x=e.target.closest('.suppr');if(!x)return;
+  if(!confirm('Retirer '+x.dataset.code+' de cette liste ? Le billet reste valable.'))return;
+  ecrire(lire().filter(b=>b.code!==x.dataset.code));afficher();
+});
+
+$('form').onsubmit=e=>{
+  e.preventDefault();$('err').textContent='';
+  let c=$('code').value.trim().toUpperCase().replace(/\s+/g,'');
+  if(!c)return;
+  if(!c.startsWith('DTM-'))c='DTM-'+c;
+  c=c.replace(/-\d{1,2}$/,'');
+  const btn=e.submitter||$('form').querySelector('button');btn.disabled=true;
+  statut(c).then(d=>{
+    btn.disabled=false;
+    if(!d||d.statut==='Non trouvé'||!d.ok){$('err').textContent='Aucune réservation trouvée avec le code '+c+'.';return}
+    const l=lire().filter(b=>b.code!==c);
+    l.unshift({code:c,nom:d.nom||'',evenement:d.evenement||'',total:d.total||'',ajoute:Date.now()});
+    ecrire(l);etat[c]=d;$('code').value='';afficher();
+  }).catch(()=>{btn.disabled=false;$('err').textContent='Pas de connexion. Réessayez.'});
+};
+
+afficher();verifierTout();
+</script>
+</body>
+</html>

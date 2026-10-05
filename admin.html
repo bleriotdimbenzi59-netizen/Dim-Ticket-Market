@@ -12,6 +12,7 @@ body{font-family:sans-serif;background:#111;color:#fff;margin:0;padding:16px}
 .en-attente{background:#854d0e}.preuve{background:#1d4ed8}.paye{background:#166534}
 button{padding:10px 16px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
 .btn-valider{background:#22c55e;color:#000}
+.btn-wa{display:inline-block;background:#25d366;color:#000;text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:bold;font-size:13px;white-space:nowrap}
 input{padding:12px;width:100%;border-radius:10px;border:1px solid #333;background:#1f1f1f;color:#fff;box-sizing:border-box;margin-bottom:8px}
 small{color:#aaa}
 </style>
@@ -46,8 +47,25 @@ function afficher(liste){
     return '<div class="card"><div><b>'+echap(c.id)+'</b> - '+echap(c.nom)+' ('+echap(c.tel)+')<br>'
       +'<small>'+(c.total?echap(c.total)+' $':'—')+' · '+echap(c.evenement)+' · '+echap(c.paiement)+' · '+echap(c.date)+'</small><br>'
       +'<span class="badge '+cls+'">'+echap(s)+'</span></div>'
-      +'<div>'+(/^pay/i.test(s)?'':'<button class="btn-valider" data-id="'+echap(c.id)+'">Valider</button>')+'</div></div>';
+      +'<div>'+(/^pay/i.test(s)?lienBillet(c):'<button class="btn-valider" data-id="'+echap(c.id)+'">Valider</button>')+'</div></div>';
   }).join('');
+}
+
+// Numéro du client au format international (RDC : 243…)
+function numeroWa(tel){
+  let d=String(tel||'').replace(/\D/g,'');
+  if(d.startsWith('00'))d=d.slice(2);
+  if(d.startsWith('0'))d=d.slice(1);
+  if(d.length===9)d='243'+d;
+  return d.length>=11?d:'';
+}
+// Bouton WhatsApp qui envoie au client le lien de son billet
+function lienBillet(c){
+  const n=numeroWa(c.tel);if(!n)return '';
+  const lien=new URL('ticket.html?id='+encodeURIComponent(c.id)+'&nom='+encodeURIComponent(String(c.nom).split(' ')[0]),location.href).href;
+  const msg='Bonjour '+c.nom+', votre paiement est confirmé ✅\n\nVotre billet Dim Ticket Market ('+c.evenement+') : '+lien
+    +'\n\nGardez ce message : il vous permet de retrouver votre billet à tout moment. Présentez le QR code à l’entrée.';
+  return '<a class="btn-wa" target="_blank" rel="noopener" href="https://wa.me/'+n+'?text='+encodeURIComponent(msg)+'">📲 Envoyer le billet</a>';
 }
 
 function valider(id){
