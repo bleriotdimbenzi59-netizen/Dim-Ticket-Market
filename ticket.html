@@ -10,6 +10,9 @@ body{font-family:sans-serif;background:#f5f5f5;margin:0;padding:20px;display:fle
 .card{width:100%;max-width:380px;background:#fff;padding:24px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,.08);text-align:center}
 .code{letter-spacing:2px;font-size:26px;font-weight:bold;margin:10px 0}
 .ok{color:#16a34a}
+@keyframes pop{0%{opacity:0;transform:scale(.6)}70%{opacity:1;transform:scale(1.08)}100%{transform:scale(1)}}
+h1.ok{animation:pop .4s ease-out both}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .ko{color:#e11d48}
 a.lien{display:block;margin-top:16px;color:#444}
 button{margin-top:14px;padding:10px 18px;border:0;border-radius:10px;background:#111;color:#fff;cursor:pointer}
