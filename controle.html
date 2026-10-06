@@ -27,6 +27,8 @@ button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:14px;cur
 #res p{margin:6px 0;font-size:17px}
 #res .ev{font-weight:800}
 #res button{margin-top:14px;width:100%;background:rgba(0,0,0,.35);color:#fff}
+@keyframes flash{0%{transform:scale(.94);filter:brightness(1.6)}100%{transform:none;filter:none}}
+#res.flash{animation:flash .25s ease-out}
 .vert{background:#15803d;color:#fff}
 .rouge{background:#b91c1c;color:#fff}
 .orange{background:#c2410c;color:#fff}
@@ -38,6 +40,7 @@ ul{list-style:none;padding:0;margin:8px 0 0}
 li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #2e2e31;font-size:14px}
 li span:last-child{color:#a8a29a;white-space:nowrap}
 .lien{display:block;text-align:center;margin-top:20px;color:#a8a29a}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -85,6 +88,7 @@ function extraire(txt){
 let occupe=false;
 function afficher(cls,html){
   const r=$('res');r.className=cls;r.innerHTML=html+'<button id="suivant">Billet suivant</button>';r.style.display='block';
+  if(cls!=='gris'){void r.offsetWidth;r.classList.add('flash')} // le résultat s'affiche tout de suite, le flash se joue par-dessus
   $('suivant').onclick=suivant;
   r.scrollIntoView({behavior:'smooth',block:'nearest'});
 }

@@ -172,7 +172,7 @@ async function charger(){
     }
     if(d.stock){appliquerStock(d.stock);change=true}
     if(change&&!cur){
-      if(document.activeElement&&document.activeElement.id==='q')window.list();else window.home();
+      if($('#list'))window.list();else window.home();
     }
   }catch(err){}
 }

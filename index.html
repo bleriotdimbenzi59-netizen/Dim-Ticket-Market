@@ -150,6 +150,12 @@ body{font-family:'Inter',system-ui,sans-serif}
 .p4{background:radial-gradient(ellipse at 50% 130%,#5c1420,#160406 74%)}
 .wa{display:flex;align-items:center;justify-content:center;text-decoration:none}
 .mesb{margin-left:auto;margin-right:10px;padding:10px 14px;border-radius:12px;background:#242427;color:#ffc107;font:700 14px 'Inter',sans-serif;text-decoration:none;white-space:nowrap}
+/* Animations : courtes, transparence + déplacement seulement */
+@keyframes apparait{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.apparait{animation:apparait .28s ease-out both}
+.btn,.st button,.chips button,.lnk2,.mesb,.burger{transition:transform .1s ease-out}
+.btn:active:not(:disabled),.st button:active:not(:disabled),.chips button:active,.lnk2:active,.mesb:active,.burger:active{transform:scale(.95)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .mn a{color:var(--fg);font:600 16px 'Inter',sans-serif;padding:8px 0;text-decoration:none}
 </style>
 </head>
@@ -182,7 +188,9 @@ const cnt=()=>Object.values(sel).reduce((a,b)=>a+b,0);
 const tot=()=>cur.t.reduce((a,x,i)=>a+(sel[i]||0)*x.p,0);
 const poster=e=>e.img?`<div class="poster" style="background-image:url('${e.img}');background-size:cover;background-position:center"></div>`:`<div class="poster ${e.c}"><span class="eyebrow">Dim Ticket Market</span><div><h4 class="pt">${e.n}</h4>${e.tag?`<span class="ptag">${e.tag}</span>`:''}</div></div>`;
 const draw=h=>{app.innerHTML=h};
-const nav=h=>{draw(h);scrollTo(0,0)};
+// nav = ouverture d'une page : seuls ses blocs apparaissent en douceur (pas les mises à jour + / −)
+const nav=h=>{draw(h);scrollTo(0,0);Array.from(app.children).forEach((el,i)=>{el.style.animationDelay=Math.min(i,6)*30+'ms';el.classList.add('apparait')})};
+document.addEventListener('touchstart',()=>{},{passive:true}); // active l'effet d'appui sur iPhone
 
 function home(){cur=null;sel={};nav(`<h1>Trouvez votre prochain événement.</h1><input id="q" type="search" placeholder="Rechercher un événement…" aria-label="Rechercher un événement" value="${esc(q)}"><div id="list"></div>`);list()}
 function list(){const r=EV.filter(e=>(e.n+' '+e.l).toLowerCase().includes(q.toLowerCase()));
