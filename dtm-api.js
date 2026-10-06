@@ -70,14 +70,15 @@ async function commander(btn){
 
     const texte=btn.textContent;
     btn.disabled=true;btn.textContent='Envoi en cours…';
+    const lent=setTimeout(()=>{btn.textContent='Connexion lente, patientez…'},8000);
     let srv=null,panne=false;
     try{
-      const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),15000);
+      const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),45000);
       const r=await fetch(API,{method:'POST',signal:ctl.signal,body:JSON.stringify({action:'commande',eventId:cur.id,nom:nm,telephone:ph,adresse:ad||'Non renseignée',email:em,paiement:pm,promo:cd,billets:billets})});
       clearTimeout(to);
       srv=await r.json();
     }catch(x){panne=true}
-    btn.disabled=false;btn.textContent=texte;
+    clearTimeout(lent);btn.disabled=false;btn.textContent=texte;
 
     if(srv&&srv.ok){
       memoriser({code:srv.code,nom:nm,evenement:cur.n,date:cur.d,total:srv.total});
@@ -85,11 +86,8 @@ async function commander(btn){
       return;
     }
     if(srv&&srv.error){return err(srv.error)}
-    // Serveur injoignable : on garde l'ancien parcours (message WhatsApp)
-    if(panne&&typeof window.done==='function'){
-      window.done({nm:nm,ph:ph,em:em,ad:ad,cd:cd,mk:mk,pm:pm});
-      return;
-    }
+    // Serveur injoignable : pas d'ancien parcours WhatsApp, on demande de réessayer
+    if(panne)return err('Notre serveur met trop de temps à répondre. Patientez une minute puis appuyez à nouveau sur « Réserver mes billets ».');
     err('Impossible d’enregistrer votre commande pour le moment. Vérifiez votre connexion et réessayez.');
   }catch(x){
     err('Erreur technique : '+(x&&x.message?x.message:x));
