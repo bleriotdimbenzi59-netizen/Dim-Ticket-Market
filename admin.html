@@ -12,7 +12,8 @@ body{font-family:sans-serif;background:#111;color:#fff;margin:0;padding:16px}
 .en-attente{background:#854d0e}.preuve{background:#1d4ed8}.paye{background:#166534}
 button{padding:10px 16px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
 .btn-valider{background:#22c55e;color:#000}
-.btn-wa{display:inline-block;background:#25d366;color:#000;text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:bold;font-size:13px;white-space:nowrap}
+.btn-wa+.btn-wa{margin-top:6px;background:#075e54;color:#fff}
+.btn-wa{display:block;text-align:center;background:#25d366;color:#000;text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:bold;font-size:13px;white-space:nowrap}
 input{padding:12px;width:100%;border-radius:10px;border:1px solid #333;background:#1f1f1f;color:#fff;box-sizing:border-box;margin-bottom:8px}
 small{color:#aaa}
 </style>
@@ -65,7 +66,13 @@ function lienBillet(c){
   const lien=new URL('ticket.html?id='+encodeURIComponent(c.id)+'&nom='+encodeURIComponent(String(c.nom).split(' ')[0]),location.href).href;
   const msg='Bonjour '+c.nom+', votre paiement est confirmé ✅\n\nVotre billet Dim Ticket Market ('+c.evenement+') : '+lien
     +'\n\nGardez ce message : il vous permet de retrouver votre billet à tout moment. Présentez le QR code à l’entrée.';
-  return '<a class="btn-wa" target="_blank" rel="noopener" href="https://wa.me/'+n+'?text='+encodeURIComponent(msg)+'">📲 Envoyer le billet</a>';
+  const waMe='https://wa.me/'+n+'?text='+encodeURIComponent(msg);
+  // Sur Android, chaque bouton ouvre la bonne application (WhatsApp ou WhatsApp Business)
+  const app=pkg=>/Android/i.test(navigator.userAgent)
+    ?'intent://send?phone='+n+'&text='+encodeURIComponent(msg)+'#Intent;package='+pkg+';scheme=whatsapp;S.browser_fallback_url='+encodeURIComponent(waMe)+';end'
+    :waMe;
+  return '<a class="btn-wa" target="_blank" rel="noopener" href="'+echap(app('com.whatsapp'))+'">📲 Envoyer le billet</a>'
+    +'<a class="btn-wa" target="_blank" rel="noopener" href="'+echap(app('com.whatsapp.w4b'))+'">📲 Via WhatsApp Business</a>';
 }
 
 function valider(id){
