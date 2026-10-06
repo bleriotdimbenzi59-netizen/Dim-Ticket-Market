@@ -11,6 +11,11 @@ h2{margin-top:0}
 .pay{background:#fff7ed;padding:15px;border:1px solid #fdba74;border-radius:12px;margin:16px 0}
 .num{font-size:22px;font-weight:bold}
 button{width:100%;padding:14px;background:#25d366;color:#fff;border:0;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer}
+#envoi p{margin:0 0 8px;font-weight:bold;text-align:center}
+#envoi button+button{margin-top:10px}
+#btn-biz{background:#075e54}
+.aide{font-size:12px;color:#666;text-align:center;margin-top:10px}
+.aide button{display:inline;width:auto;padding:0;background:none;color:#8a5200;font-size:12px;text-decoration:underline;border-radius:0}
 #msg{display:none;background:#dcfce7;padding:14px;border-radius:12px;margin-top:14px}
 .titre{font-weight:bold;margin:0 0 10px}
 .modes{margin:0 0 14px;padding-left:22px}
@@ -30,7 +35,12 @@ button{width:100%;padding:14px;background:#25d366;color:#fff;border:0;border-rad
 <p><b>Montant :</b> <span id="mnt"></span> $</p>
 <p><b>Référence :</b> <b id="ref"></b></p>
 </div>
-<button id="btn">J'ai payé, envoyer la preuve sur WhatsApp</button>
+<div id="envoi">
+<p>J'ai payé, envoyer la preuve :</p>
+<button id="btn" type="button">Sur WhatsApp</button>
+<button id="btn-biz" type="button">Sur WhatsApp Business</button>
+<div class="aide">Aucune application ne s'ouvre ? <button type="button" id="cp-num">Copier notre numéro</button> (+243 894 101 598) et <button type="button" id="cp-msg">copier le message</button>, puis collez-les dans WhatsApp.</div>
+</div>
 <div id="msg"><b>Merci ! Preuve envoyée.</b><br><br>Restez sur WhatsApp : votre billet s'affichera ici dès que le paiement sera confirmé.</div>
 <p id="etat">Page en attente de validation…</p>
 <p style="text-align:center;font-size:13px;color:#666;margin-top:10px">Vous pouvez fermer cette page : votre billet restera disponible dans <a href="mes-billets.html" style="color:#8a5200">Mes billets</a>.</p>
@@ -63,13 +73,24 @@ try{
 $('mnt').textContent=montant;
 $('info').textContent='Commande '+id+(nom?' pour '+nom:'');
 
-$('btn').onclick=()=>{
-  const msg="Bonjour DTM, j'ai payé.\n\nID : "+id+"\nNom : "+nom+"\nMontant : "+$('mnt').textContent+" $";
-  window.open('https://wa.me/'+WA+'?text='+encodeURIComponent(msg),'_blank');
-  fetch(API,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'preuve_envoyee',id:id})}).catch(()=>{});
-  $('btn').style.display='none';
+const message=()=>"Bonjour DTM, j'ai payé.\n\nID : "+id+"\nNom : "+nom+"\nMontant : "+$('mnt').textContent+" $";
+// Sur Android, on ouvre directement l'application voulue (WhatsApp ou WhatsApp Business) ;
+// si elle n'est pas installée, le navigateur retombe sur le lien wa.me.
+function envoyer(business){
+  const msg=message(),lien='https://wa.me/'+WA+'?text='+encodeURIComponent(msg);
+  fetch(API,{method:'POST',mode:'no-cors',keepalive:true,body:JSON.stringify({action:'preuve_envoyee',id:id})}).catch(()=>{});
   $('msg').style.display='block';
-};
+  if(/Android/i.test(navigator.userAgent)){
+    location.href='intent://send?phone='+WA+'&text='+encodeURIComponent(msg)+'#Intent;package='+(business?'com.whatsapp.w4b':'com.whatsapp')+';scheme=whatsapp;S.browser_fallback_url='+encodeURIComponent(lien)+';end';
+  }else{
+    const w=window.open(lien,'_blank');if(!w)location.href=lien;
+  }
+}
+$('btn').onclick=()=>envoyer(false);
+$('btn-biz').onclick=()=>envoyer(true);
+const copier=(b,t)=>{if(!navigator.clipboard)return;navigator.clipboard.writeText(t).then(()=>{const x=b.textContent;b.textContent='Copié';setTimeout(()=>{b.textContent=x},1500)}).catch(()=>{})};
+$('cp-num').onclick=e=>copier(e.target,'+'+WA);
+$('cp-msg').onclick=e=>copier(e.target,message());
 
 function verifier(){
   fetch(API+'?id='+encodeURIComponent(id)).then(r=>r.json()).then(d=>{
@@ -85,7 +106,7 @@ function verifier(){
   }).catch(()=>{});
 }
 if(id){verifier();setInterval(verifier,5000);}
-else{$('etat').textContent='Lien invalide : aucune commande.';$('btn').style.display='none';}
+else{$('etat').textContent='Lien invalide : aucune commande.';$('envoi').style.display='none';}
 </script>
 </body>
 </html>
