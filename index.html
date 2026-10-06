@@ -252,7 +252,7 @@ else if(a==='inc'){sel[i]=Math.min((sel[i]||0)+1,Math.min(cur.t[i].s,10));ev(fal
 else if(a==='dec'){sel[i]=Math.max((sel[i]||0)-1,0);ev(false)}
 else if(a==='pay')checkout();
 else if(a==='back')ev();
-else if(a==='confirm')confirmPay();
+else if(a==='confirm'){const e=$('#err');if(e)e.textContent='Connexion impossible avec notre serveur. Vérifiez votre connexion internet puis rechargez la page.'}
 else if(a==='copywa'){navigator.clipboard?.writeText('+'+WA_NUMBER).then(()=>{const t=b.textContent;b.textContent='Copié';setTimeout(()=>b.textContent=t,1500)}).catch(()=>{})}
 else if(a==='copymsg'){navigator.clipboard?.writeText(lastMsg).then(()=>{const t=b.textContent;b.textContent='Copié';setTimeout(()=>b.textContent=t,1500)}).catch(()=>{})}
 else if(a==='wabiz'){const isAndroid=/Android/i.test(navigator.userAgent),link=waLink(lastMsg);window.location.href=isAndroid?('intent://send?phone='+WA_NUMBER+'&text='+encodeURIComponent(lastMsg)+'#Intent;package=com.whatsapp.w4b;scheme=whatsapp;S.browser_fallback_url='+encodeURIComponent(link)+';end'):link}});
