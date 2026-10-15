@@ -113,7 +113,7 @@ function installerAffichage(){
   const lieu=e=>e.l?`<p class="inf">${ic.pin}${e.l}</p>`:'';
   window.list=function(){
     const r=EV.filter(e=>(cat==='Tout'||K[e.id]===cat)&&(e.n+' '+e.l).toLowerCase().includes(q.toLowerCase()));
-    $('#list').innerHTML=r.map(e=>`<article class="card">${poster(e)}<div class="b"><h3 class="ti">${e.n}</h3>${quand(e)}${lieu(e)}<div class="row ft"><span>${out(e)?'<b class="bad">SOLD OUT</b>':'À partir de <b>'+usd(low(e))+'</b>'}</span><button class="btn" data-a="open" data-id="${e.id}"${out(e)?' disabled':''}>Acheter</button></div></div></article>`).join('')||'<p class="m">Aucun événement dans cette catégorie pour le moment.</p>';
+    $('#list').innerHTML=r.map(e=>`<article class="card">${poster(e)}<div class="b"><h3 class="ti">${e.n}</h3>${quand(e)}${lieu(e)}<div class="row ft"><span>${out(e)?'<b class="bad">SOLD OUT</b>':'À partir de <b>'+usd(low(e))+'</b>'}</span><button class="btn" data-a="open" data-id="${e.id}"${out(e)?' disabled':''}>Acheter</button></div></div></article>`).join('')||(typeof vide==='function'?vide():'<p class="m">Aucun événement pour le moment.</p>');
   };
   const origineEv=window.ev;
   window.ev=function(top=true){
